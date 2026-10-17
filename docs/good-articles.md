@@ -1,5 +1,14 @@
-#### Understanding Kubernetes Services
-https://getenroute.io/blog/ingress-controller-kubernetes-api-gateway-secure-service-jwt-oauth-oidc-network-namespace/
+#### Understanding Kubernetes Networking (Services, Gateway API)
+https://kubernetes.io/docs/concepts/services-networking/gateway/
+
+#### The Kubernetes API — what a "resource" actually is
+https://kubernetes.io/docs/concepts/overview/kubernetes-api/
+
+#### Gateway API official documentation
+https://gateway-api.sigs.k8s.io/
+
+#### NGINX Gateway Fabric documentation
+https://docs.nginx.com/nginx-gateway-fabric/
 
 #### Install a kubernetes cluster from scratch
 https://medium.com/geekculture/building-a-kubernetes-cluster-on-aws-from-scratch-7e1e8b0342c4

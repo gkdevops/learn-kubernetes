@@ -53,12 +53,12 @@ kubectl scale deployment/<name> --replicas=5
 kubectl set image deployment/<name> <container>=<image>
 ```
 
-## Services, Ingress, config
+## Services, Gateway API, config
 
 ```bash
 kubectl get svc,ep
 kubectl describe svc <name>
-kubectl get ingress
+kubectl get gatewayclass,gateway,httproute
 kubectl create configmap my-config --from-file=./files --from-literal=KEY=value
 kubectl get configmap <name> -o yaml
 kubectl create secret generic my-secret --from-literal=password='s3cr3t'

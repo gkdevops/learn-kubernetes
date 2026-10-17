@@ -36,12 +36,54 @@ kubectl get nodes
 kubectl apply -f ../../13-observability/01-metrics-server/metrics-server.yaml
 ```
 
-## Ingress
-Install an ingress controller following the AWS guide:
-<https://aws.amazon.com/premiumsupport/knowledge-center/eks-access-kubernetes-services/>
+## External traffic - NGINX Gateway Fabric
+
+Route external HTTP through the Gateway API, programmed by **NGINX Gateway Fabric**.
+
+### 1. Install the Gateway API CRDs
+
+```bash
+kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.8.0/deploy/crds.yaml
+```
+
+(or `kubectl apply -f ../../06-networking/04-gateway-api/crd.yaml`)
+
+### 2. Install NGINX Gateway Fabric
+
+```bash
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
+  --create-namespace -n nginx-gateway
+
+kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
+```
+
+By default this creates a `LoadBalancer` Service (an AWS **NLB** on EKS).
+To use a `NodePort` Service instead:
+
+```bash
+helm uninstall ngf -n nginx-gateway
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
+  --create-namespace -n nginx-gateway \
+  --set nginx.service.type=NodePort
+```
+
+### 3. Verify
+
+```bash
+kubectl get pods -n nginx-gateway
+kubectl get svc -n nginx-gateway             # external-address of the NGF service
+kubectl -n nginx-gateway get deploy ngf-nginx-gateway-fabric
+```
+
+Then continue with [06-networking / 04-gateway-api](../../06-networking/04-gateway-api/)
+to define a `GatewayClass`, `Gateway` and `HTTPRoute` and route traffic to a demo
+app.
 
 ## Cleanup
 ```bash
+helm uninstall ngf -n nginx-gateway
+kubectl delete -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.8.0/deploy/crds.yaml
+
 eksctl delete cluster --region=us-east-1 --name=valaxy-eks-cluster --force
 ```
 

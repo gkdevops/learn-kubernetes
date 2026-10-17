@@ -24,7 +24,7 @@ Work top to bottom. Each stage assumes the previous one.
 - **05-storage** — emptyDir → hostPath → PV/PVC → StorageClass (dynamic) → EBS CSI
 
 ## Stage 5 — Networking
-- **06-networking** — ClusterIP → NodePort → LoadBalancer → Ingress → Gateway API
+- **06-networking** — ClusterIP → NodePort → LoadBalancer → Gateway API (NGINX Gateway Fabric)
 
 ## Stage 6 — Placement & scale
 - **07-scheduling** — nodeSelector, node affinity, taints & tolerations

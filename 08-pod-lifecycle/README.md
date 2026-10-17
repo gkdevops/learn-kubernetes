@@ -37,5 +37,5 @@ kubectl delete -f 01-probes/ -f 02-hooks/
 2. Add a `startupProbe` for a slow-starting container.
 
 ## EKS note
-Set both probes on any internet-facing workload so the ALB/NLB only sends
-traffic to healthy Pods.
+Set both probes on any internet-facing workload so the NGINX Gateway Fabric /
+NLB only sends traffic to healthy Pods.

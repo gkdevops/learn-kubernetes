@@ -1,3 +1,4 @@
+# Apple + banana demo backends used by http-route.yaml.
 ---
 kind: Pod
 apiVersion: v1

@@ -34,7 +34,7 @@ Each module README ends with an **Exercise** and, where relevant, an **EKS note*
 | 03 | [workload-controllers](03-workload-controllers/) | ReplicaSet, Deployment, strategies, DaemonSet, Jobs/CronJob |
 | 04 | [configuration](04-configuration/) | ConfigMaps and Secrets |
 | 05 | [storage](05-storage/) | emptyDir, hostPath, PV/PVC (static), StorageClass (dynamic), EBS CSI |
-| 06 | [networking](06-networking/) | ClusterIP, NodePort, LoadBalancer, Ingress, Gateway API |
+| 06 | [networking](06-networking/) | ClusterIP, NodePort, LoadBalancer, NGINX Gateway Fabric (Gateway API) |
 | 07 | [scheduling](07-scheduling/) | nodeSelector, node affinity, taints & tolerations |
 | 08 | [pod-lifecycle](08-pod-lifecycle/) | Liveness/readiness probes, lifecycle hooks |
 | 09 | [resource-management](09-resource-management/) | requests/limits, LimitRange, ResourceQuota |

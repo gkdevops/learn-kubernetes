@@ -50,7 +50,7 @@ whole game, and it is called **reconciliation**.
 
 Most objects ("Pod", "Deployment") are **workload objects** whose desired state
 you submit. A few are **configuration** for the controllers themselves:
-`PriorityClass`, `StorageClass`, `IngressClass`, `RuntimeClass`. When you see
+`PriorityClass`, `StorageClass`, `GatewayClass`, `RuntimeClass`. When you see
 `Class` in a name, it is usually a way to choose *which* controller handles the
 resource (it keeps Kubernetes pluggable).
 
