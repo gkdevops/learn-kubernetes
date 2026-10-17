@@ -1,0 +1,22 @@
+# Binaries / archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Helm
+*.tmp
+charts/
+
+# Local kubeconfig / secrets
+*.kubeconfig
+kubeconfig
+*.pem
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
