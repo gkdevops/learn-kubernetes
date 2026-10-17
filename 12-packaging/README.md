@@ -42,7 +42,7 @@ kubectl delete -k 02-kustomize/stg
 
 ## Exercise
 1. Add a `replicaCount: 3` override for prod.
-2. In Kustomize, add a `commonLabels` patch and see it propagate.
+2. In Kustomize, add a `labels:` entry to the base and see it propagate.
 
 ## EKS note
 Helm is the standard way to install cluster add-ons (AWS Load Balancer

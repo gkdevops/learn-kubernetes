@@ -53,6 +53,7 @@ bash scripts/validate.sh
 
 ## Reference
 
+- [Architecture primer](docs/architecture.md)
 - [kubectl cheat sheet](docs/kubectl-cheatsheet.md)
 - [Good articles](docs/good-articles.md)
 - [Roadmap](docs/roadmap.md)

@@ -4,7 +4,7 @@ metadata:
   name: sales-service
 spec:
   selector: 
-    app: sales-app
+    app: salesapp
   type: ClusterIP
   ports:  
   - name: http

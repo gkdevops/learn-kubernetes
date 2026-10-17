@@ -30,7 +30,8 @@ kubectl delete -f 01-basic-pod/pod.yaml
 ```
 
 ## Exercise
-1. Change the image to `nginx:1.27.1` and re-apply — what does `kubectl apply` do?
+2. Pin the image tag (replace `nginx:latest` with something like `nginx:1.27.1`)
+   and re-apply — what does `kubectl apply` do?
 2. Delete the Pod. How is it recreated? (It is not — Pods are not self-healing.
    That is the job of a ReplicaSet → see [03-workload-controllers](../03-workload-controllers/).)
 

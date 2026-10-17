@@ -4,8 +4,12 @@ metadata:
   name: dev-quota
 spec:
   hard:
-    cpu: "1"
-    memory: 700Mi
+    # Two equivalent syntaxes for counting objects:
+    #   1. built-in resource names (pods, services, secrets...)
+    #   2. count/<group-version of resource> for anything else
+    # Both limit how many objects the namespace may contain.
+    cpu: "1"                       # total CPU requested by all containers
+    memory: 700Mi                  # total memory requested
     pods: "4"
     services: "2"
     secrets: "3"

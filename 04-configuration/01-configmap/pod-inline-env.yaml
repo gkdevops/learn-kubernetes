@@ -1,3 +1,6 @@
+# This is the WRONG way to pass environment variables: values are hard-coded
+# in the manifest, so changing them means editing (and re-applying) the Pod spec.
+# Compare with pod-inline-env.yaml using a ConfigMap -> see ../../01-configmap/.
 apiVersion: v1
 kind: Pod
 metadata:

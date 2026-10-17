@@ -1,5 +1,11 @@
-commonLabels:
-  company: flipkart
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# `labels` (metadata only) replaces the deprecated `commonLabels`.
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: sample-co
+
 resources:
   - deployment.yaml
   - service.yaml

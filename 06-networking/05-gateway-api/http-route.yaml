@@ -1,0 +1,51 @@
+# Platform teams usually own GatewayClass + Gateway (infrastructure).
+# App teams own HTTPRoute / GRPCRoute (traffic rules).
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: nginx
+spec:
+  # Matches the controller you installed (e.g. nginx Gateway Fabric).
+  controllerName: gateway.nginx.org/nginx-gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: fruit-route
+spec:
+  parentRefs:
+  - name: my-gateway
+    kind: Gateway
+    sectionName: http
+  hostnames:
+  - "mywebsite.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /apple
+    backendRefs:
+    - name: apple-service
+      port: 5678
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /banana
+    backendRefs:
+    - name: banana-service
+      port: 5678

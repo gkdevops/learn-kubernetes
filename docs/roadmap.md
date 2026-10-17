@@ -3,6 +3,7 @@
 Work top to bottom. Each stage assumes the previous one.
 
 ## Stage 0 — Get a cluster
+- **[docs/architecture.md](architecture.md)** — read this first: control plane, nodes, reconciliation
 - **00-cluster-setup/01-eks** — create an EKS cluster with `eksctl` (default path)
 - **00-cluster-setup/02-kubeadm** — self-managed cluster with containerd + Calico
 - **00-cluster-setup/03-local** — kind / minikube for a local cluster
