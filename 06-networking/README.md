@@ -27,7 +27,8 @@ kubectl get svc -o wide
 ## External traffic with NGINX Gateway Fabric
 
 ```bash
-kubectl apply -f 04-gateway-api/crd.yaml        # Gateway API CRDs (mandatory, before the chart)
+kubectl apply --server-side -f 04-gateway-api/crd.yaml         # 8 Gateway API CRDs (for http-route.yaml)
+kubectl apply --server-side -f 04-gateway-api/nginx-crds.yaml # 14 NGINX CRDs (the chart needs these)
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
   --create-namespace -n nginx-gateway \
   -f 06-networking/04-gateway-api/values.yaml   # NLB + nodePort 30080 -> listener 80

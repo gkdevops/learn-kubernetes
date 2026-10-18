@@ -13,6 +13,7 @@ programmed by **NGINX Gateway Fabric (NGF)** as the data plane.
 | File | What it shows |
 |------|---------------|
 | [crd.yaml](crd.yaml) | The Gateway API CRDs (v1.5.1 standard bundle) — the API surface itself |
+| [nginx-crds.yaml](nginx-crds.yaml) | The 14 `gateway.nginx.org` CRDs the NGF chart needs (vendored from v2.8.0) |
 | [values.yaml](values.yaml) | Helm values: NLB Service + nodePort 30080→80 mapping + client-IP rewriting |
 | [http-route.yaml](http-route.yaml) | `GatewayClass` + `Gateway` + `HTTPRoute` routed to the apple/banana demo Services |
 
@@ -27,18 +28,42 @@ programmed by **NGINX Gateway Fabric (NGF)** as the data plane.
 That platform/app split is the Gateway API's core win over old
 annotation-driven workflows.
 
-## Step 1 — Install the Gateway API CRDs
+## Step 1 — Install both CRD sets
 
-**Recommended (from NGF upstream):**
+There are **two** CRD bundles here and you need **both**. They are not
+alternatives to each other:
+
+| File | CRDs | Needed by |
+|------|------|-----------|
+| `crd.yaml` | 8 standard Gateway API (`gateway.networking.k8s.io`) | `http-route.yaml` — `Gateway`, `GatewayClass`, `HTTPRoute` |
+| `nginx-crds.yaml` | 14 NGINX-specific (`gateway.nginx.org`) | the NGF chart itself — `NginxGateway`, `NginxProxy` |
+
+Install them in this order:
 
 ```bash
-kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.8.0/deploy/crds.yaml
+kubectl apply --server-side -f crd.yaml
+kubectl apply --server-side -f nginx-crds.yaml
 ```
 
-**Or, offline from this folder:**
+> `--server-side` is recommended for large CRDs: client-side apply stores the
+> whole CRD in the `last-applied-configuration` annotation, and these bundles are
+> big enough to hit the 256 KB annotation limit.
+
+Skipping either one fails with a message that points at the wrong thing:
+
+```text
+# nginx-crds.yaml missing -> at `helm install ngf`
+no matches for kind "NginxGateway" in version "gateway.nginx.org/v1alpha1"
+
+# crd.yaml missing -> at `kubectl apply -f http-route.yaml`
+no matches for kind "GatewayClass" in version "gateway.networking.k8s.io/v1"
+```
+
+To refresh the vendored copy from upstream instead of using the file in this
+folder:
 
 ```bash
-kubectl apply -f crd.yaml
+curl -O https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.8.0/deploy/crds.yaml
 ```
 
 ## Step 2 — Install NGINX Gateway Fabric
@@ -118,6 +143,7 @@ curl -H "Host: mywebsite.com" http://<nlb-hostname or node-ip>:30080/banana
 ```bash
 kubectl delete -f http-route.yaml
 helm uninstall ngf -n nginx-gateway
+kubectl delete -f nginx-crds.yaml
 kubectl delete -f crd.yaml
 ```
 
