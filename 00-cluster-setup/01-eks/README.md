@@ -75,6 +75,48 @@ kubectl run netcheck --rm -it --restart=Never --image=busybox:1.36 -- \
 A non-zero `wget` exit (401/403 from the registry) still proves egress works;
 an `ImagePullBackOff` on the `netcheck` pod does not.
 
+### Check the node group has room for Pods
+
+The second thing that breaks a fresh cluster is Pod capacity. Check it explicitly:
+
+```bash
+kubectl get nodes -o custom-columns=NAME:.metadata.name,PODCAP:.status.allocatable.pods
+kubectl get pods -A --field-selector spec.nodeName=<node> --no-headers | wc -l
+```
+
+With the original `t3.small` / `t2.small` node group, EKS gives each node
+**8 Pod slots** — and the six add-ons consume exactly 8:
+
+```
+aws-node + coredns + kube-proxy + ebs-csi-controller + ebs-csi-node
++ efs-csi-controller + efs-csi-node + metrics-server  =  8/8
+```
+
+Both nodes then sit at 100% with **zero** application Pods, and your first
+`kubectl run` fails with a message that never mentions capacity:
+
+```
+0/2 nodes are available: 2 Too many pods.
+```
+
+`cluster.yaml` sets `maxPodsPerNode: 30` to avoid this. Two caveats worth knowing:
+
+- **You cannot raise it later.** AWS treats a managed node group's `maxPods` as
+  immutable, so changing it means creating a *new* node group and deleting the
+  old one.
+- 30 slots on a `t3.medium` still needs real `requests` in your manifests; 30
+  Pods each asking for 100Mi memory will exhaust 4 GB on their own. See
+  [09-resource-management](../09-resource-management/).
+
+### Spot vs on-demand
+
+The node group here is on-demand (`spot: false`). Spot is roughly 70% cheaper,
+but AWS can reclaim an instance with only a **2-minute** warning. During a lab
+that evicts the Pod you are testing at the worst moment, and the resulting
+`CrashLoopBackOff` / `NotReady` looks exactly like a broken manifest. On-demand
+also avoids "insufficient Spot capacity" when a single AZ is saturated. For a
+throwaway learning cluster the small extra cost is worth the predictability.
+
 Point `kubectl` at it (eksctl usually does this automatically):
 
 ```bash

@@ -12,8 +12,7 @@ metadata:
 
 # eksctl is turning Auto Mode on by default in an upcoming release, and in
 # Auto Mode it no longer creates managed node groups or managed networking
-# add-ons by default. Pinning this to false keeps the behaviour described in
-# this repo (and in the modules that follow) instead of silently changing.
+# add-ons by default.
 autoModeConfig:
   enabled: false
 
@@ -66,12 +65,28 @@ iam:
         - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 
 managedNodeGroups:
-  - name: spot-workers
+  - name: ondemand-workers
     minSize: 2
     maxSize: 3
     desiredCapacity: 2
-    spot: true
-    instanceTypes: ["t3.small", "t3a.small", "t2.small"]
+    # On-demand, not spot. Spot is cheaper but a 2-minute interruption notice
+    # during a lab means the pod you are testing gets evicted mid-experiment,
+    # which looks exactly like a broken manifest. On-demand also removes the
+    # "capacity unavailable in this AZ" failure mode. Cost difference for this
+    # size is about $0.02/node/hour.
+    spot: false
+    instanceTypes: ["t3.medium"]
+    # Pod slots per node. WITHOUT this, EKS defaults maxPods to 8 for the
+    # t3.small/t2.small sizes used in the first pass of this cluster - and the
+    # six EKS add-ons alone consume exactly 8 pods per node:
+    #   aws-node + coredns + kube-proxy + ebs-csi-controller + ebs-csi-node
+    #   + efs-csi-controller + efs-csi-node + metrics-server  =  8/8
+    # The nodes then report "0/N nodes are available: Too many pods" and not a
+    # single course Pod can schedule. Check it any time with:
+    #   kubectl get nodes -o custom-columns=NAME:.metadata.name,PODCAP:.status.allocatable.pods
+    # NOTE: maxPods cannot be changed on an existing managed node group - AWS
+    # treats it as immutable, so changing it means creating a new node group.
+    maxPodsPerNode: 30
     # Password-less SSH with the existing EC2 key pair "myaws"
     # (pem-key-name "myaws", used to reach nodes for the labs below).
     # eksctl wants the PUBLIC key path. Derive it from the private key once:
