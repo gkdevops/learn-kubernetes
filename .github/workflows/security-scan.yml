@@ -59,15 +59,7 @@ jobs:
           severityThreshold: critical
 
       - name: Trivy report
-        run: |
-          python3 scripts/report.py \
-            --trivy trivy.json \
-            --title "Trivy - IaC misconfiguration report" \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python3 scripts/report.py --trivy trivy.json --summary
 
       - name: Kubescape report
-        run: |
-          python3 scripts/report.py \
-            --kubescape kubescape.json \
-            --title "Kubescape - NIST framework controls report" \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python3 scripts/report.py --kubescape kubescape.json --summary
