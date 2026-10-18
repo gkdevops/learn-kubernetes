@@ -23,13 +23,6 @@ helm list
 helm uninstall myapp
 ```
 
-## Kustomize
-```bash
-kubectl kustomize 02-kustomize/stg      # render
-kubectl apply -k 02-kustomize/stg
-kubectl kustomize 02-kustomize/prod
-```
-
 ## Verify
 `helm template` / `kubectl kustomize` render the final YAML without applying it —
 inspect the differences between environments.

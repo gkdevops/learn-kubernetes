@@ -2,14 +2,6 @@
 #
 # Validate all plain Kubernetes manifests in this repo with kubeconform.
 #
-# Excludes:
-#   - GitHub Actions workflows (not Kubernetes manifests)
-#   - Helm charts (templates + values are not plain manifests)
-#   - Any file named values.yaml (Helm values, not a manifest)
-#   - Kustomize overlays (kustomization.yaml is not a Kubernetes manifest)
-#   - eksctl cluster config (different schema)
-#   - fluent-bit Helm values file (not a manifest)
-#
 # Usage:  bash scripts/validate.sh
 set -euo pipefail
 

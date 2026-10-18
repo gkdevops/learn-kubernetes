@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sales-configmap
-data:
-  API_ENDPOINT: http://abcdbstg02.corp.com:5432

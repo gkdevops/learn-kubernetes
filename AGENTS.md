@@ -72,15 +72,12 @@ scripts/validate.sh   kubeconform over all plain manifests
    must pass with 0 invalid/0 errors. Files without `apiVersion`/`kind` (Helm
    charts, values, kustomization, eksctl config, GitHub workflows) are
    excluded by `EXCLUDES` in the script; add any new non-manifest YAML there.
-2. `kustomize build 12-packaging/02-kustomize/{stg,prod}` must render without
-   warnings (Kustomize v5 syntax: `resources`, `patches`, `labels` — never
-   `bases`, `patchesStrategicMerge`, `commonLabels`).
-3. Keep changes consistent with the numbered structure; renumber with `git mv`
+2. Keep changes consistent with the numbered structure; renumber with `git mv`
    when adding/removing examples so no sequence gaps appear.
 
 ## Git
 
-- Work on a feature branch (`reorg/numbered-modules` pattern); commit
+- Work on a feature branch (`feature/<feature-name>` pattern); commit
   logically and push to `origin` (no PR unless asked).
 - Large restructures must use `git mv` to preserve history.
 - Commit messages: imperative summary line, then a bulleted body of what and why.
