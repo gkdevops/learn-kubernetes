@@ -40,7 +40,10 @@ kubectl apply -f ../../13-observability/01-metrics-server/metrics-server.yaml
 
 Route external HTTP through the Gateway API, programmed by **NGINX Gateway Fabric**.
 
-### 1. Install the Gateway API CRDs
+### 1. Install the Gateway API CRDs (mandatory, before the Helm chart)
+
+NGINX Gateway Fabric requires the Gateway API resources to be present in the
+cluster **before** its Helm chart is deployed:
 
 ```bash
 kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.8.0/deploy/crds.yaml
@@ -50,29 +53,39 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gat
 
 ### 2. Install NGINX Gateway Fabric
 
+Install with the data-plane Service pinned to nodePort **30080** mapped to the
+Gateway HTTP listener on port **80**:
+
 ```bash
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
-  --create-namespace -n nginx-gateway
+  --create-namespace -n nginx-gateway \
+  --set nginx.service.type=LoadBalancer \
+  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
 
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 ```
 
-By default this creates a `LoadBalancer` Service (an AWS **NLB** on EKS).
-To use a `NodePort` Service instead:
+On EKS this gives the traffic path: **AWS NLB → worker node :30080 → NGINX
+data plane :80**.
 
-```bash
-helm uninstall ngf -n nginx-gateway
-helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
-  --create-namespace -n nginx-gateway \
-  --set nginx.service.type=NodePort
-```
+To use a plain `NodePort` Service (local/kind clusters, no NLB), swap
+`--set nginx.service.type=LoadBalancer` for `--set nginx.service.type=NodePort`
+and keep the same `nodePorts` mapping.
 
 ### 3. Verify
 
 ```bash
 kubectl get pods -n nginx-gateway
-kubectl get svc -n nginx-gateway             # external-address of the NGF service
 kubectl -n nginx-gateway get deploy ngf-nginx-gateway-fabric
+```
+
+Note: the NGINX data-plane Service (the `LoadBalancer` that becomes the AWS
+NLB) is created **after a `Gateway` resource is applied** — not at
+helm-install time. Check it once you've routed traffic via
+[06-networking / 04-gateway-api](../../06-networking/04-gateway-api/):
+
+```bash
+kubectl get svc -n nginx-gateway     # 80:30080/TCP, EXTERNAL-IP = NLB hostname
 ```
 
 Then continue with [06-networking / 04-gateway-api](../../06-networking/04-gateway-api/)
