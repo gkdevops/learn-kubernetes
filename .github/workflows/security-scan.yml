@@ -1,0 +1,73 @@
+name: Security scan
+
+# On-demand security scan of every manifest in the repo, using the vendors'
+# own GitHub Actions:
+#   - aquasecurity/trivy-action   (IaC misconfiguration: kube-linter KSV-* rules)
+#   - kubescape/github-action     (NIST framework controls + compliance score)
+#
+# Run it: Actions -> Security scan -> Run workflow
+# Add `pull_request:` to `on:` if you also want it on every PR.
+
+on:
+  workflow_dispatch:
+    inputs:
+      frameworks:
+        description: "Kubescape frameworks (comma separated)"
+        type: string
+        default: AllControls
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Trivy + Kubescape manifest scan
+    # ubuntu-26.04 is the newest GitHub-hosted image (ubuntu-latest is 24.04).
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Trivy - IaC misconfiguration scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          scanners: misconfig
+          format: json
+          output: trivy.json
+          # report only: this repo documents accepted findings, so a finding
+          # must not fail the run. Set to "1" to make it a hard gate.
+          exit-code: "0"
+          skip-dirs: .git,scripts/tools
+
+      - name: Kubescape - framework controls scan
+        uses: kubescape/github-action@v3.0.21
+        with:
+          files: .
+          frameworks: ${{ inputs.frameworks }}
+          format: json
+          outputFile: kubescape
+          # report only (see above); the default of 0 would fail on any
+          # failing control.
+          failedThreshold: 100
+          severityThreshold: critical
+
+      - name: Trivy report
+        run: |
+          python3 scripts/report.py \
+            --trivy trivy.json \
+            --title "Trivy - IaC misconfiguration report" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Kubescape report
+        run: |
+          python3 scripts/report.py \
+            --kubescape kubescape.json \
+            --title "Kubescape - NIST framework controls report" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
