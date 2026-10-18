@@ -1,20 +1,29 @@
+# The counterpart to rolling-update.yaml.
+#
+# IMPORTANT: this Deployment deliberately uses its OWN name and labels. If both
+# examples were called "nginx-deployment" with selector app=nginx, applying one
+# would silently mutate the other, and their ReplicaSets would adopt each
+# other's Pods - the two examples would no longer be independently applicable.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: nginx-deployment-recreate
   labels:
-    app: nginx
+    app: nginx-recreate
 spec:
   replicas: 6
   strategy:
+    # All existing Pods are killed BEFORE any new Pod is created, so capacity
+    # dips to zero during the rollout. The opposite trade-off to RollingUpdate,
+    # which keeps some Pods serving throughout.
     type: Recreate
   selector:
     matchLabels:
-      app: nginx
+      app: nginx-recreate
   template:
     metadata:
       labels:
-        app: nginx
+        app: nginx-recreate
     spec:
       containers:
       - name: nginx-cont

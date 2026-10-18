@@ -1,18 +1,26 @@
+# Mounting a ConfigMap as a FILE rather than environment variables.
+#
+# Files are special: when the ConfigMap changes, the mounted file is updated in
+# place (eventually), whereas env vars are fixed when the Pod starts. That
+# difference is the reason to prefer a file for anything a human edits.
+#
+# Own name and labels on purpose: 02-secret/deployment-secret.yaml demonstrates
+# the env-var equivalent with a Secret, and the two must coexist.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: nginx-deployment-configfile
   labels:
-    app: nginx
+    app: nginx-configfile
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: nginx-configfile
   template:
     metadata:
       labels:
-        app: nginx
+        app: nginx-configfile
     spec:
       containers:
       - name: nginx-cont

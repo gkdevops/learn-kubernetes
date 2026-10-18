@@ -1,12 +1,17 @@
-# This is the WRONG way to pass environment variables: values are hard-coded
-# in the manifest, so changing them means editing (and re-applying) the Pod spec.
-# Compare with pod-inline-env.yaml using a ConfigMap -> see ../../01-configmap/.
+# This is the WRONG way to pass configuration: the values are hard-coded in the
+# manifest, so changing one means editing this file and re-applying the Pod -
+# and because a bare Pod's spec is largely immutable, that means deleting it.
+# Compare with deployment-env.yaml, which pulls the same values from a ConfigMap
+# and therefore needs no manifest edit.
+#
+# Own name on purpose: 02-pods/01-basic-pod/pod.yaml is also called sample-pod,
+# and the two must not overwrite each other.
 apiVersion: v1
 kind: Pod
 metadata:
-  name: sample-pod
+  name: sample-pod-inline
   labels:
-    app: sample
+    app: sample-inline
 spec:
   containers:
   - name: sample-container

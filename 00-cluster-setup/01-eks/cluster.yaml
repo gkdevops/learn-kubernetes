@@ -63,6 +63,19 @@ iam:
         namespace: kube-system
       attachPolicyARNs:
         - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+    # The WORKLOAD needs its own role, not just the provider. With IRSA the
+    # provider assumes a role on behalf of the Pod's ServiceAccount, so a Pod
+    # that mounts a SecretProviderClass volume must reference an annotated SA or
+    # the mount fails with:
+    #   An IAM role must be associated with service account default
+    # (namespace: default)
+    # The Pod therefore sets `serviceAccountName: aws-secrets-demo-sa` - see
+    # 04-configuration/03-external-secret.
+    - metadata:
+        name: aws-secrets-demo-sa
+        namespace: default
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 
 managedNodeGroups:
   - name: ondemand-workers

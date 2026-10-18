@@ -142,8 +142,25 @@ helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets
 helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver \
   --namespace kube-system \
   --set syncSecret.enabled=true \
-  --set enableSecretRotation=true
+  --set enableSecretRotation=true \
+  --set tokenRequests[0].audience=sts.amazonaws.com \
+  --set tokenRequests[1].audience=pods.eks.amazonaws.com
 ```
+
+> **`tokenRequests` is not optional with an IRSA-based provider.** The AWS
+> provider needs a projected ServiceAccount token so it can call
+> `sts:AssumeRoleWithWebIdentity` *as the workload Pod's identity*. The chart
+> defaults `tokenRequests: []`, so without those two flags every mount fails
+> with:
+>
+> ```text
+> MountVolume.SetUp failed: CSI token error: serviceAccount.tokens not provided
+> - ensure tokenRequests is configured in CSIDriver spec
+> ```
+>
+> You can read the exact audiences the provider wants from its own log:
+> `This provider requires tokenRequests to be configured in the CSIDriver spec
+> (audiences: sts.amazonaws.com, pods.eks.amazonaws.com)`.
 
 `syncSecret.enabled=true` lets the driver create a mirrored K8s Secret so you
 can also use `secretKeyRef` in env vars (not just volume mounts).

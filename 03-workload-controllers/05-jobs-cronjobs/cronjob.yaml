@@ -10,7 +10,7 @@ spec:
         spec:               
           containers:
           - name: counter
-            image: busybox:1.36:1.36
+            image: busybox:1.36
             command:
              - "/bin/sh"
              - "-c"
