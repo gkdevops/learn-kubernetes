@@ -13,6 +13,7 @@ programmed by **NGINX Gateway Fabric (NGF)** as the data plane.
 | File | What it shows |
 |------|---------------|
 | [crd.yaml](crd.yaml) | The Gateway API CRDs (v1.5.1 standard bundle) — the API surface itself |
+| [values.yaml](values.yaml) | Helm values: NLB Service + nodePort 30080→80 mapping + client-IP rewriting |
 | [http-route.yaml](http-route.yaml) | `GatewayClass` + `Gateway` + `HTTPRoute` routed to the apple/banana demo Services |
 
 ## The three objects (and who owns them)
@@ -52,13 +53,13 @@ internet → AWS NLB → worker node :30080 (nodePort) → NGINX data plane :80
 
 One Service does the whole chain: NGF creates the data-plane Service as
 `type: LoadBalancer` (EKS provisions the NLB), and we pin its nodePort to
-`30080` mapped to the Gateway listener port `80`:
+`30080` mapped to the Gateway listener port `80`. Both live in
+[values.yaml](values.yaml):
 
 ```bash
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
   --create-namespace -n nginx-gateway \
-  --set nginx.service.type=LoadBalancer \
-  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
+  -f 06-networking/04-gateway-api/values.yaml
 ```
 
 Wait for the controller to be Ready before applying routes:
@@ -67,9 +68,9 @@ Wait for the controller to be Ready before applying routes:
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 ```
 
-> On kind/minikube (no cloud load balancer), skip the NLB and use
-> `--set nginx.service.type=NodePort` with the same `nodePorts` mapping
-> instead, then reach the Gateway directly on `<node-ip>:30080`.
+> On kind/minikube (no cloud load balancer), skip the NLB and override the
+> Service type with `--set nginx.service.type=NodePort` (same `nodePorts`
+> mapping), then reach the Gateway directly on `<node-ip>:30080`.
 
 ## Step 3 — Apply the demo backends and the route
 
@@ -134,5 +135,9 @@ kubectl delete -f crd.yaml
 - NGF sets `externalTrafficPolicy: Local` by default, which preserves the
   client source IP; the NLB health check only marks nodes running an NGF data
   plane Pod as healthy.
+- `values.yaml` also configures client-IP rewriting (`XForwardedFor`): NGINX
+  trusts the addresses in `trustedAddresses` when reading the real client IP.
+  The CIDR there **must match your VPC** (`10.0.0.0/16` is the default for
+  `eksctl`-created VPCs in this repo — adjust if yours differs).
 - On kind/minikube use `--set nginx.service.type=NodePort` with the same
   `nodePorts` mapping and reach `<node-ip>:30080` directly.

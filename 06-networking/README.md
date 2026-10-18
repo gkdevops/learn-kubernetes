@@ -30,8 +30,7 @@ kubectl get svc -o wide
 kubectl apply -f 04-gateway-api/crd.yaml        # Gateway API CRDs (mandatory, before the chart)
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
   --create-namespace -n nginx-gateway \
-  --set nginx.service.type=LoadBalancer \
-  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
+  -f 06-networking/04-gateway-api/values.yaml   # NLB + nodePort 30080 -> listener 80
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 
 kubectl apply -f 04-gateway-api/app.yaml        # demo backends

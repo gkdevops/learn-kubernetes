@@ -5,6 +5,7 @@
 # Excludes:
 #   - GitHub Actions workflows (not Kubernetes manifests)
 #   - Helm charts (templates + values are not plain manifests)
+#   - Any file named values.yaml (Helm values, not a manifest)
 #   - Kustomize overlays (kustomization.yaml is not a Kubernetes manifest)
 #   - eksctl cluster config (different schema)
 #   - fluent-bit Helm values file (not a manifest)
@@ -17,7 +18,7 @@ if ! command -v kubeconform >/dev/null 2>&1; then
   exit 1
 fi
 
-EXCLUDES='\.git/|\.github/|12-packaging/01-helm|12-packaging/02-kustomize|00-cluster-setup/01-eks/cluster\.yaml|13-observability/03-logging/fluentbit-values\.yaml'
+EXCLUDES='\.git/|\.github/|12-packaging/01-helm|12-packaging/02-kustomize|00-cluster-setup/01-eks/cluster\.yaml|13-observability/03-logging/fluentbit-values\.yaml|values\.yaml$'
 
 mapfile -t files < <(
   find . -path ./.git -prune -o -type f \( -name '*.yaml' -o -name '*.yml' \) -print \

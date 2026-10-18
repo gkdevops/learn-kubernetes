@@ -100,13 +100,13 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gat
 ### 2. Install NGINX Gateway Fabric
 
 Install with the data-plane Service pinned to nodePort **30080** mapped to the
-Gateway HTTP listener on port **80**:
+Gateway HTTP listener on port **80** (see
+[06-networking/04-gateway-api/values.yaml](../../06-networking/04-gateway-api/values.yaml)):
 
 ```bash
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
   --create-namespace -n nginx-gateway \
-  --set nginx.service.type=LoadBalancer \
-  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
+  -f ../../06-networking/04-gateway-api/values.yaml
 
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 ```
