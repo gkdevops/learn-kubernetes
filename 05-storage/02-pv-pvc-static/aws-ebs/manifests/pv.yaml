@@ -1,0 +1,26 @@
+# Replace volumeHandle with the ID returned by `aws ec2 create-volume`
+# (see ../README.md) and set the zone to the one you created it in.
+# Placeholder values - this will not bind until you edit both.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: test-pv
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+  csi:
+    driver: ebs.csi.aws.com
+    fsType: ext4
+    volumeHandle: vol-0123456789abcdef0
+  # Pins this PV to the volume's Availability Zone. Without it the controller
+  # has no idea where the disk lives, and the PVC stays Pending.
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: topology.ebs.csi.aws.com/zone
+              operator: In
+              values:
+                - us-east-1a

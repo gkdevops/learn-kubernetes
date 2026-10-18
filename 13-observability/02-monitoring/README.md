@@ -15,9 +15,14 @@ helm repo update
 
 helm upgrade -i prometheus prometheus-community/prometheus \
   --namespace monitoring --create-namespace \
-  --set alertmanager.persistence.storageClass="gp2" \
-  --set server.persistentVolume.storageClass="gp2"
+  --set alertmanager.persistence.storageClass=ebs-sc \
+  --set server.persistentVolume.storageClass=ebs-sc
 ```
+
+> `ebs-sc` is the `gp3` StorageClass from
+> [05-storage / 03-storageclass-dynamic](../../05-storage/03-storageclass-dynamic/).
+> If you cleaned up module 05, re-apply that StorageClass first, or drop the two
+> `--set` flags entirely to fall back to the cluster's default StorageClass.
 
 ## Verify
 ```bash
@@ -43,5 +48,5 @@ kubectl delete namespace monitoring
 
 ## EKS note
 Prometheus needs IAM for nothing (it reads kube-apiserver metrics via a token),
-but persistent `gp2` volumes require the EBS CSI driver to be installed
+but persistent EBS volumes require the EBS CSI driver to be installed
 (see `00-cluster-setup/01-eks/`).

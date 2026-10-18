@@ -25,8 +25,8 @@ kubectl top pods -A
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm upgrade -i prometheus prometheus-community/prometheus \
   --namespace monitoring --create-namespace \
-  --set alertmanager.persistence.storageClass="gp2" \
-  --set server.persistentVolume.storageClass="gp2"
+  --set alertmanager.persistence.storageClass=ebs-sc \
+  --set server.persistentVolume.storageClass=ebs-sc
 ```
 
 ## Logging

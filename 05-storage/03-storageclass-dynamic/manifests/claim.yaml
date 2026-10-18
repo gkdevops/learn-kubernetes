@@ -1,0 +1,14 @@
+# Distinct name on purpose: 02-pv-pvc-static/aws-ebs uses `ebs-claim` too, and
+# a PVC's spec is immutable once bound, so a name clash makes the second apply
+# fail rather than teach anything.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-claim-dynamic
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-sc
+  resources:
+    requests:
+      storage: 4Gi

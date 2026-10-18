@@ -1,0 +1,21 @@
+# Distinct names on purpose: 02-pv-pvc-static/aws-ebs also uses a PVC called
+# `ebs-claim` and a Pod called `app`. Reusing them makes the second apply fail
+# with "spec is immutable after creation", which is confusing rather than
+# instructive.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-dynamic
+spec:
+  containers:
+  - name: app-dynamic
+    image: busybox:1.36
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo $(date -u) >> /data/out.txt; sleep 5; done"]
+    volumeMounts:
+    - name: persistent-storage
+      mountPath: /data
+  volumes:
+  - name: persistent-storage
+    persistentVolumeClaim:
+      claimName: ebs-claim-dynamic

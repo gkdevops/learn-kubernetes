@@ -1,0 +1,20 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+provisioner: ebs.csi.aws.com
+# WaitForFirstConsumer delays provisioning until a Pod actually asks for the
+# volume. That matters on EKS: it lets the scheduler pick the node first, so the
+# volume is created in that node's Availability Zone instead of failing to bind.
+volumeBindingMode: WaitForFirstConsumer
+# gp3: cheaper per GB than gp2 and better baseline performance (3000 IOPS,
+# 125 MB/s by default, and more can be bought without changing volume type).
+# Without this line the driver falls back to its default of gp2.
+parameters:
+  type: gp3
+  encrypted: "true"
+# Lets PVCs be grown in place later (see Exercise 3 in the module README).
+allowVolumeExpansion: true
+# Delete (rather than Retain) removes the EBS volume when the PVC is deleted, so
+# a lab cluster does not leak paid-for disks.
+reclaimPolicy: Delete
