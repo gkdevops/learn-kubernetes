@@ -3,15 +3,31 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: valaxy-eks-cluster
+  name: learn-k8s
   region: us-east-1
+  version: "1.36"
+  tags:
+    environment: learning
+    owner: devops-lab
+
+iam:
+  withOIDC: true
+  # IRSA for the AWS Secrets Manager provider daemonset (used by the
+  # Secrets Store CSI driver — see 04-configuration/03-external-secret).
+  serviceAccounts:
+    - metadata:
+        name: csi-secrets-store-provider-aws
+        namespace: kube-system
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 
 managedNodeGroups:
-  - name: worker-node-group-1
+  - name: spot-workers
     minSize: 2
-    maxSize: 5
+    maxSize: 3
     desiredCapacity: 2
-    instanceType: t3.small
+    spot: true
+    instanceTypes: ["t3.small", "t3a.small", "t2.small"]
     ssh:
       allow: true
       publicKeyPath: ~/.ssh/aws.pub
@@ -24,12 +40,10 @@ managedNodeGroups:
         cloudWatch: true
 
 addons:
-- name: aws-ebs-csi-driver
-  wellKnownPolicies:
-    ebsCSIController: true
+  - name: aws-ebs-csi-driver
+  - name: aws-efs-csi-driver
 
 cloudWatch:
-    clusterLogging:
-        enableTypes: ["audit", "authenticator", "controllerManager"]
-        logRetentionInDays: 60
-
+  clusterLogging:
+    enableTypes: ["audit"]
+    logRetentionInDays: 7

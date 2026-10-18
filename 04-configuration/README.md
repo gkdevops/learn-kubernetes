@@ -17,6 +17,8 @@ ConfigMaps and Secrets.
 | [01-configmap/pod-inline-env.yaml](01-configmap/pod-inline-env.yaml) | Plain env vars (no ConfigMap) |
 | [02-secret/secret.yaml](02-secret/secret.yaml) | Secret (base64-encoded) |
 | [02-secret/deployment-secret.yaml](02-secret/deployment-secret.yaml) | Consume a Secret as env vars |
+| [03-external-secret/secret-provider-class.yaml](03-external-secret/secret-provider-class.yaml) | SecretProviderClass (AWS Secrets Manager → K8s) |
+| [03-external-secret/deployment-secrets-manager.yaml](03-external-secret/deployment-secrets-manager.yaml) | Consume Secrets Manager secret as volume + env vars |
 
 ## Commands
 ```bash
@@ -28,6 +30,11 @@ kubectl describe configmap sales-dev
 kubectl apply -f 02-secret/secret.yaml
 kubectl apply -f 02-secret/deployment-secret.yaml
 kubectl get secret sales-creds -o jsonpath='{.data.username}' | base64 -d
+
+# EKS only — Secrets Manager example (see 03-external-secret/README.md):
+# first create the secret in AWS, then:
+kubectl apply -f 03-external-secret/secret-provider-class.yaml
+kubectl apply -f 03-external-secret/deployment-secrets-manager.yaml
 ```
 
 ## Verify
@@ -37,6 +44,9 @@ injected values.
 ## Cleanup
 ```bash
 kubectl delete -f 01-configmap/ -f 02-secret/
+# for the Secrets Manager example (EKS only):
+kubectl delete -f 03-external-secret/
+aws secretsmanager delete-secret --secret-id learn-k8s/demo-creds --force-delete-without-recovery --region us-east-1
 ```
 
 ## Exercise
@@ -46,5 +56,6 @@ kubectl delete -f 01-configmap/ -f 02-secret/
    `kubectl create secret generic sales-creds --from-literal=username=admin --from-literal=password=admin123`.
 
 ## EKS note
-For real secrets prefer AWS Secrets Manager with the Secrets Store CSI driver
-(or External Secrets Operator) rather than committing Secrets to git.
+For real secrets, use [03-external-secret](03-external-secret/) which pulls
+values from AWS Secrets Manager via the Secrets Store CSI Driver — no
+base64-encoded Secrets committed to git.

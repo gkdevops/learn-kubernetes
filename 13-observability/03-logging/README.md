@@ -8,21 +8,26 @@ Ship Pod logs to Elasticsearch so you can search them in Kibana.
 - `helm` and `kubectl` configured.
 
 ## 1. (EKS) create the EBS CSI IRSA role
-Elasticsearch needs a persistent volume, so first give the EBS CSI driver IAM
-permissions via IRSA:
+Elasticsearch needs a persistent volume, so the EBS CSI driver needs IAM
+permissions via IRSA.
+
+**Skip this step if you created the cluster with
+[00-cluster-setup/01-eks/cluster.yaml](../../00-cluster-setup/01-eks/cluster.yaml)** —
+it already installs the `aws-ebs-csi-driver` add-on (eksctl auto-attaches the
+required IAM role). Only do this if you built the cluster differently:
 
 ```bash
 eksctl create iamserviceaccount \
   --name ebs-csi-controller-sa \
   --namespace kube-system \
-  --cluster valaxy-eks-cluster \
+  --cluster learn-k8s \
   --role-name AmazonEKS_EBS_CSI_DriverRole \
   --role-only \
   --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
   --approve
 
 ARN=$(aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole --query 'Role.Arn' --output text)
-eksctl create addon --cluster valaxy-eks-cluster --name aws-ebs-csi-driver --version latest --service-account-role-arn $ARN --force
+eksctl create addon --cluster learn-k8s --name aws-ebs-csi-driver --version latest --service-account-role-arn $ARN --force
 ```
 
 ## 2. Create the namespace and install Elasticsearch

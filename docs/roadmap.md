@@ -16,7 +16,7 @@ Work top to bottom. Each stage assumes the previous one.
 - **03-workload-controllers** — ReplicaSet → Deployment → strategies → DaemonSet → Jobs/CronJob
 
 ## Stage 3 — Configuring workloads
-- **04-configuration** — ConfigMap and Secret consumption (env, envFrom, volume)
+- **04-configuration** — ConfigMap and Secret consumption (env, envFrom, volume), then AWS Secrets Manager via the Secrets Store CSI driver (IRSA)
 - **09-resource-management** — requests/limits, LimitRange, ResourceQuota
 - **08-pod-lifecycle** — readiness/liveness probes and lifecycle hooks
 
@@ -36,6 +36,9 @@ Work top to bottom. Each stage assumes the previous one.
 - **13-observability** — metrics-server, Prometheus, logging
 
 ## Coming next (not yet written)
-RBAC & IRSA, NetworkPolicy, StatefulSet, PodDisruptionBudget, VPA &
+RBAC, NetworkPolicy, StatefulSet, PodDisruptionBudget, VPA &
 Cluster Autoscaler, GitOps (Argo CD / Flux), Operators & CRDs, troubleshooting,
 and an end-to-end capstone project.
+
+(IRSA is now covered hands-on in `04-configuration/03-external-secret` and
+`00-cluster-setup/01-eks`; a dedicated RBAC module is still to come.)

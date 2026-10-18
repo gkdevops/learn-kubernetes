@@ -32,7 +32,7 @@ Each module README ends with an **Exercise** and, where relevant, an **EKS note*
 | 01 | [foundations](01-foundations/) | Namespaces, labels/selectors, multi-resource files |
 | 02 | [pods](02-pods/) | The atom of Kubernetes: a single Pod |
 | 03 | [workload-controllers](03-workload-controllers/) | ReplicaSet, Deployment, strategies, DaemonSet, Jobs/CronJob |
-| 04 | [configuration](04-configuration/) | ConfigMaps and Secrets |
+| 04 | [configuration](04-configuration/) | ConfigMaps, Secrets, and AWS Secrets Manager (CSI driver) |
 | 05 | [storage](05-storage/) | emptyDir, hostPath, PV/PVC (static), StorageClass (dynamic), EBS CSI |
 | 06 | [networking](06-networking/) | ClusterIP, NodePort, LoadBalancer, NGINX Gateway Fabric (Gateway API) |
 | 07 | [scheduling](07-scheduling/) | nodeSelector, node affinity, taints & tolerations |
