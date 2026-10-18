@@ -10,10 +10,54 @@ metadata:
     environment: learning
     owner: devops-lab
 
+# eksctl is turning Auto Mode on by default in an upcoming release, and in
+# Auto Mode it no longer creates managed node groups or managed networking
+# add-ons by default. Pinning this to false keeps the behaviour described in
+# this repo (and in the modules that follow) instead of silently changing.
+autoModeConfig:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# Networking - reuse the existing default VPC instead of creating a new one
+# ---------------------------------------------------------------------------
+# VPC      vpc-0ef81059ce16ee1e2   172.31.0.0/16   (default VPC, us-east-1)
+# Subnets  us-east-1a  subnet-05683e137491c80c0   public  (MapPublicIpOnLaunch=true)
+#          us-east-1b  subnet-0cad1fcc0ff77c377   public  (MapPublicIpOnLaunch=true)
+# NAT      none in this VPC, and none needed - see below
+#
+# WHY PUBLIC SUBNETS MATTER
+# With no `vpc` block, eksctl creates a brand-new VPC with both private and
+# public subnets and puts the managed node group in the PRIVATE ones. Private
+# subnets have no route to the internet, so every image pull dies with
+# `ImagePullBackOff` unless the VPC also has one of:
+#   - a NAT gateway             (works, ~$32/month plus data charges)
+#   - VPC endpoints for ECR/S3  (~4 endpoints, comparable cost)
+#   - nodes in PUBLIC subnets   (free - each node gets a public IP)
+#
+# This account uses the third option: the two subnets below are public, and
+# egress goes straight out through the internet gateway. Verified from a node:
+#   1.1.1.1 via 172.31.0.1 dev ens5 src 172.31.6.32   <- IGW, not a NAT GW
+#
+# The subnet IDs are pinned per AZ so the node group always lands in exactly
+# two AZs. Reuse an existing VPC ONLY with subnet IDs - eksctl refuses to mix
+# `-f cluster.yaml` with `--vpc-public-subnets` on the command line:
+#   Error: cannot use --vpc-public-subnets when --config-file/-f is set
+#
+# Check what the cluster actually ended up with:
+#   kubectl get nodes -o wide
+#   aws ec2 describe-instances --filters "Name=tag:eks:cluster-name,Values=learn-k8s" \
+#     --query 'Reservations[].Instances[].PublicIpAddress'
+vpc:
+  subnets:
+    public:
+      us-east-1a: { id: subnet-05683e137491c80c0 }
+      us-east-1b: { id: subnet-0cad1fcc0ff77c377 }
+
 iam:
+  # OIDC provider is required for IRSA (IAM Roles for Service Accounts).
   withOIDC: true
-  # IRSA for the AWS Secrets Manager provider daemonset (used by the
-  # Secrets Store CSI driver — see 04-configuration/03-external-secret).
+  # IRSA role for the AWS Secrets Manager provider daemonset, used by the
+  # Secrets Store CSI driver - see 04-configuration/03-external-secret.
   serviceAccounts:
     - metadata:
         name: csi-secrets-store-provider-aws
@@ -28,10 +72,19 @@ managedNodeGroups:
     desiredCapacity: 2
     spot: true
     instanceTypes: ["t3.small", "t3a.small", "t2.small"]
+    # Password-less SSH with the existing EC2 key pair "myaws"
+    # (pem-key-name "myaws", used to reach nodes for the labs below).
+    # eksctl wants the PUBLIC key path. Derive it from the private key once:
+    #   ssh-keygen -y -f /path/to/private.pem > ~/.ssh/aws.pub
+    # On Windows the pem also needs restricted ACLs or ssh refuses it with
+    # "UNPROTECTED PRIVATE KEY FILE":
+    #   icacls myaws.pem /remove:g "BUILTIN\Users" "NT AUTHORITY\Authenticated Users"
     ssh:
       allow: true
       publicKeyPath: ~/.ssh/aws.pub
     iam:
+      # Node role policies. eksctl creates the managed addon policies itself
+      # when they are listed here without an explicit roleARN.
       withAddonPolicies:
         externalDNS: true
         autoScaler: true

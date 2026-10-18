@@ -14,6 +14,19 @@ Create a production-like Kubernetes cluster on AWS with `eksctl`.
 3. Install [`eksctl`](https://eksctl.io/installation/).
 4. Make sure your SSH public key exists at `~/.ssh/aws.pub`
    (the public half of the key you use to log in to EC2 instances).
+   eksctl only needs the **public** key; derive it from an existing private
+   key instead of generating a new pair:
+
+   ```bash
+   ssh-keygen -y -f /path/to/private.pem > ~/.ssh/aws.pub
+   ```
+
+   On Windows, also strip the group/other ACLs from the `.pem` or `ssh`
+   refuses it with `UNPROTECTED PRIVATE KEY FILE`:
+
+   ```powershell
+   icacls myaws.pem /remove:g "BUILTIN\Users" "NT AUTHORITY\Authenticated Users"
+   ```
 
 ## Create the cluster
 `cluster.yaml` provisions a managed node group, the EBS/EFS CSI add-ons,
@@ -23,6 +36,44 @@ control-plane logging.
 ```bash
 eksctl create cluster -f cluster.yaml
 ```
+
+### The `vpc` block is pinned to this account's subnets
+
+`cluster.yaml` reuses an existing VPC instead of letting eksctl create one,
+because the default VPC has **no NAT gateway**:
+
+```
+vpc-0ef81059ce16ee1e2  172.31.0.0/16
+  us-east-1a  subnet-05683e137491c80c0  public
+  us-east-1b  subnet-0cad1fcc0ff77c377  public
+```
+
+> **Why this matters.** With no `vpc` block, eksctl creates a new VPC and puts
+> nodes in the **private** subnets, which have no route to the internet — every
+> image pull then fails with `ImagePullBackOff`. You would need a NAT gateway
+> (~$32/month) or ECR/S3 VPC endpoints to fix it. Public subnets get the same
+> internet access for free, which is why a learning cluster should use them.
+
+> **Pin it in the YAML, not on the command line.** eksctl refuses to combine a
+> config file with subnet flags:
+> `Error: cannot use --vpc-public-subnets when --config-file/-f is set`.
+> There is also no `--vpc-id` flag, and `--vpc-nat-mode` is rejected alongside
+> `-f` as well.
+
+If you run this in a different account, replace the two subnet IDs (and the
+`ssh.publicKeyPath`) with your own, or delete the whole `vpc:` block and accept
+the NAT gateway cost.
+
+Verify the nodes really do have internet access:
+
+```bash
+kubectl get nodes -o wide
+kubectl run netcheck --rm -it --restart=Never --image=busybox:1.36 -- \
+  wget -qO- -T5 https://registry.k8s.io/v2/ ; echo "exit=$?"
+```
+
+A non-zero `wget` exit (401/403 from the registry) still proves egress works;
+an `ImagePullBackOff` on the `netcheck` pod does not.
 
 Point `kubectl` at it (eksctl usually does this automatically):
 
