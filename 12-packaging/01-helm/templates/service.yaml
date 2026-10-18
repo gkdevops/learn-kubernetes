@@ -6,7 +6,7 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+      targetPort: http # the named container port
       nodePort: {{ .Values.service.nodeport }}
       protocol: TCP
       name: http
