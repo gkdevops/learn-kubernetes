@@ -1,0 +1,35 @@
+# Helm values for NGINX Gateway Fabric on EKS.
+#
+# Traffic path this configures:
+#   internet -> AWS NLB -> worker node :30080 (nodePort) -> NGINX data plane :80
+#
+# Install:
+#   helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
+#     --create-namespace -n nginx-gateway \
+#     -f 06-networking/04-gateway-api/values.yaml
+#
+# (Not a Kubernetes manifest - excluded from kubeconform validation.)
+
+nginx:
+  config:
+    # Client IP handling: NGINX rewrites the real client IP from
+    # X-Forwarded-For only for the "trusted" addresses below (proxies we
+    # control). Everything else keeps its TCP source IP.
+    rewriteClientIP:
+      mode: XForwardedFor
+      # Append the previous trusted hop to X-Forwarded-For instead of
+      # replacing it (keeps the full proxy chain).
+      setIPRecursively: true
+      trustedAddresses:
+        - type: CIDR
+          value: "10.0.0.0/16"   # VPC CIDR - must match your cluster's VPC
+
+  # Configuration of the data-plane Service NGF creates per Gateway.
+  # Note: the Service (and the NLB) appear only AFTER the first Gateway
+  # resource is applied, not at helm-install time.
+  service:
+    type: LoadBalancer          # on EKS the cloud provider provisions an AWS NLB
+    externalTrafficPolicy: Local  # preserve the real client source IP
+    nodePorts:
+      - port: 30080             # nodePort opened on every worker node
+        listenerPort: 80        # must match the Gateway HTTP listener (http-route.yaml)

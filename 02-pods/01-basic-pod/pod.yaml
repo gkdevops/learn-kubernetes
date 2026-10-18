@@ -1,0 +1,22 @@
+# Section 1 - Which API group/version serves this object type
+apiVersion: v1
+# Section 2 - Which type of Object we want to create
+kind: Pod
+# Section 3 - Metadata of the object we are creating
+metadata:
+  name: sample-pod
+  labels:
+    app: sample
+    env: dev
+# Section 4 - The actual specification (the "wish") for this object
+spec:
+  containers:
+  - name: sample-container
+    image: nginx:latest
+    resources:
+      limits:
+        # Memory units are a classic Kubernetes trap:
+        #   50M  = 50,000,000 bytes     (decimal, SI prefix)
+        #   50Mi = 52,428,800 bytes     (binary, mebibytes)
+        # Same for CPU: "0.5" == "500m" (millicores).
+        memory: 50Mi 

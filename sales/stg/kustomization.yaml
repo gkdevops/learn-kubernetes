@@ -1,7 +1,0 @@
-commonLabels:
-  env: stg
-bases:
-  - ../base
-patchesStrategicMerge:
-  - deployment.yaml
-  - configmap.yaml

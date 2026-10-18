@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sales-configmap
-data:
-  JAVA_HOME: /opt/java1.8.212/bin/java

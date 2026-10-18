@@ -1,7 +1,0 @@
-commonLabels:
-  env: prod
-bases:
-  - ../base
-patchesStrategicMerge:
-  - deployment.yaml
-  - configmap.yaml

@@ -1,0 +1,49 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: learn-k8s
+  region: us-east-1
+  version: "1.36"
+  tags:
+    environment: learning
+    owner: devops-lab
+
+iam:
+  withOIDC: true
+  # IRSA for the AWS Secrets Manager provider daemonset (used by the
+  # Secrets Store CSI driver — see 04-configuration/03-external-secret).
+  serviceAccounts:
+    - metadata:
+        name: csi-secrets-store-provider-aws
+        namespace: kube-system
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+
+managedNodeGroups:
+  - name: spot-workers
+    minSize: 2
+    maxSize: 3
+    desiredCapacity: 2
+    spot: true
+    instanceTypes: ["t3.small", "t3a.small", "t2.small"]
+    ssh:
+      allow: true
+      publicKeyPath: ~/.ssh/aws.pub
+    iam:
+      withAddonPolicies:
+        externalDNS: true
+        autoScaler: true
+        ebs: true
+        efs: true
+        cloudWatch: true
+
+addons:
+  - name: aws-ebs-csi-driver
+  - name: aws-efs-csi-driver
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["audit"]
+    logRetentionInDays: 7

@@ -1,6 +1,0 @@
-commonLabels:
-  company: flipkart
-resources:
-  - deployment.yaml
-  - service.yaml
-  - configmap.yaml

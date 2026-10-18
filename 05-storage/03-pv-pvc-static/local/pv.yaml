@@ -1,0 +1,17 @@
+# Static provisioning with a full PersistentVolume spec.
+# NOTE: hostPath-backed PVs are for single-node learning clusters only.
+# Never use hostPath in production; use a CSI driver (see 05-csi-aws-ebs) instead.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/data

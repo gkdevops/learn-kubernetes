@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx-cont
+        image: nginx:1.27.1
+        ports:
+        - containerPort: 80
+        # Readiness probe - controls whether this Pod receives traffic.
+        # While the probe fails, the Pod is removed from Service endpoints
+        # (but is NOT restarted). Once Ready, it stops being polled
+        # (readiness is only re-checked when traffic is about to be sent).
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        # Liveness probe - decides whether the container is still working.
+        # When this probe fails, the kubelet RESTARTS the container. It is
+        # polled for the whole life of the Pod (unlike readiness).
+        # Short delays/periods here so failures are visible quickly in a lesson;
+        # in production make them gentler to avoid restart storms.
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10

@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: java-env
-data:
-  JAVA_HOME: /var/java1.8.212/bin/java
