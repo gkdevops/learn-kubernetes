@@ -42,9 +42,23 @@ kubectl apply -f crd.yaml
 
 ## Step 2 — Install NGINX Gateway Fabric
 
+On EKS we want an **AWS NLB** in front of the data plane, forwarding to the
+worker nodes on **port 30080**, which maps to port **80** (the HTTP Gateway
+listener) on the NGINX data plane:
+
+```text
+internet → AWS NLB → worker node :30080 (nodePort) → NGINX data plane :80
+```
+
+One Service does the whole chain: NGF creates the data-plane Service as
+`type: LoadBalancer` (EKS provisions the NLB), and we pin its nodePort to
+`30080` mapped to the Gateway listener port `80`:
+
 ```bash
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
-  --create-namespace -n nginx-gateway
+  --create-namespace -n nginx-gateway \
+  --set nginx.service.type=LoadBalancer \
+  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
 ```
 
 Wait for the controller to be Ready before applying routes:
@@ -53,23 +67,22 @@ Wait for the controller to be Ready before applying routes:
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 ```
 
-Optional — use `NodePort` instead of the default `LoadBalancer` Service
-(handy on kind/minikube where no cloud `LoadBalancer` is provisioned):
-
-```bash
-helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
-  --create-namespace -n nginx-gateway \
-  --set nginx.service.type=NodePort
-```
+> On kind/minikube (no cloud load balancer), skip the NLB and use
+> `--set nginx.service.type=NodePort` with the same `nodePorts` mapping
+> instead, then reach the Gateway directly on `<node-ip>:30080`.
 
 ## Step 3 — Apply the demo backends and the route
 
-Deploy the demo apple/banana Pods and Services that the route targets:
+Deploy the demo apple/banana Pods and Services, then the route:
 
 ```bash
 kubectl apply -f app.yaml        # apple + banana demo backends
 kubectl apply -f http-route.yaml
 ```
+
+**Important:** the NGINX data-plane Service (`LoadBalancer`/`NodePort`) is
+created by NGF **when the first `Gateway` is applied** — not at helm-install
+time (helm only creates the control-plane Service, which is ClusterIP-only).
 
 ## Verify
 
@@ -78,15 +91,24 @@ kubectl get gatewayclass,gateway,httproute
 kubectl get svc -n nginx-gateway
 ```
 
-- With NGF running and the CRDs applied, the `Gateway` should report
-  `Accepted` and `Programmed`.
-- The `HTTPRoute` should report `Accepted`.
+- The `Gateway` should report `Accepted` and `Programmed`; the `HTTPRoute`
+  should report `Accepted`.
+- After the `Gateway` is applied, NGF creates the data-plane Service — check
+  that it is `type: LoadBalancer` with `port 80/nodePort 30080`:
+
+```bash
+kubectl get svc -n nginx-gateway -o wide
+# ngf-nginx-...   LoadBalancer   ...   80:30080/TCP
+```
+
+- The AWS NLB's hostname appears in `EXTERNAL-IP` once provisioning finishes
+  (takes a couple of minutes).
 - Then (if your HTTPRoute uses hostname `mywebsite.com`):
 
 ```bash
-curl -H "Host: mywebsite.com" http://<external-address or node-ip>/apple
+curl -H "Host: mywebsite.com" http://<nlb-hostname or node-ip>:30080/apple
 # -> "welcome to apple"
-curl -H "Host: mywebsite.com" http://<external-address or node-ip>/banana
+curl -H "Host: mywebsite.com" http://<nlb-hostname or node-ip>:30080/banana
 # -> "Welcome to banana"
 ```
 
@@ -105,6 +127,12 @@ kubectl delete -f crd.yaml
 3. Change the Gateway listener to port 8080 and see how the controller reacts.
 
 ## EKS note
-On EKS the NGF Service becomes an **AWS NLB** (`type: LoadBalancer`, the default)
-via the cloud provider. Use `--set nginx.service.type=NodePort` to reach the
-Gateway directly through the node IPs instead.
+- The pinned nodePort (`30080` → listener `80`) is applied to the data-plane
+  Service even with `type: LoadBalancer`, so the EKS cloud provider builds an
+  **AWS NLB** whose instance targets forward to `node:30080` and on to NGINX
+  on port `80` — no AWS Load Balancer Controller needed.
+- NGF sets `externalTrafficPolicy: Local` by default, which preserves the
+  client source IP; the NLB health check only marks nodes running an NGF data
+  plane Pod as healthy.
+- On kind/minikube use `--set nginx.service.type=NodePort` with the same
+  `nodePorts` mapping and reach `<node-ip>:30080` directly.

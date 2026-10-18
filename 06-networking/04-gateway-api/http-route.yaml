@@ -18,7 +18,7 @@ spec:
   listeners:
   - name: http
     protocol: HTTP
-    port: 80
+    port: 80   # NGF maps this listener to nodePort 30080 on the EKS NLB path
     allowedRoutes:
       namespaces:
         from: Same

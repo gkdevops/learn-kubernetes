@@ -27,15 +27,21 @@ kubectl get svc -o wide
 ## External traffic with NGINX Gateway Fabric
 
 ```bash
-kubectl apply -f 04-gateway-api/crd.yaml        # Gateway API CRDs
+kubectl apply -f 04-gateway-api/crd.yaml        # Gateway API CRDs (mandatory, before the chart)
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
-  --create-namespace -n nginx-gateway
+  --create-namespace -n nginx-gateway \
+  --set nginx.service.type=LoadBalancer \
+  --set-json 'nginx.service.nodePorts=[{"port":30080,"listenerPort":80}]'
 kubectl wait --timeout=5m -n nginx-gateway deployment/ngf-nginx-gateway-fabric --for=condition=Available
 
 kubectl apply -f 04-gateway-api/app.yaml        # demo backends
 kubectl apply -f 04-gateway-api/http-route.yaml
 kubectl get gateway,httproute
 ```
+
+Traffic path on EKS: **AWS NLB → worker node :30080 (nodePort) → NGINX data
+plane :80 (Gateway listener)**. The data-plane Service is created by NGF when
+the `Gateway` is applied, not at helm-install time.
 
 ## Verify
 - `ClusterIP` — reachable only from inside the cluster
@@ -60,6 +66,8 @@ kubectl delete -f 04-gateway-api/crd.yaml
 
 ## EKS note
 - `type: LoadBalancer` provisions an **AWS NLB** via the AWS cloud provider.
-- The NGINX Gateway Fabric Service installed in `04-gateway-api` also becomes an
-  AWS NLB by default; use `--set nginx.service.type=NodePort` to reach it directly
-  through node IPs instead.
+- The NGINX Gateway Fabric data-plane Service (installed in `04-gateway-api`)
+  is pinned to nodePort `30080` → NGINX listener `80`, so external traffic
+  flows **NLB → node :30080 → NGINX :80**. On kind/minikube, switch to
+  `--set nginx.service.type=NodePort` (same `nodePorts` mapping) and reach
+  `<node-ip>:30080` directly.
