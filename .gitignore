@@ -3,6 +3,10 @@
 *.tar.gz
 *.tgz
 *.zip
+*.exe
+
+# Locally downloaded scanners (trivy.exe, kubescape.exe, ...) - never commit
+scripts/tools/
 
 # Helm
 *.tmp
