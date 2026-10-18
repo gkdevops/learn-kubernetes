@@ -8,6 +8,12 @@
 # Locally downloaded scanners (trivy.exe, kubescape.exe, ...) - never commit
 scripts/tools/
 
+# Scan artifacts (see scripts/scan.sh)
+__pycache__/
+security-report.md
+trivy.json
+kubescape.json
+
 # Helm
 *.tmp
 charts/
