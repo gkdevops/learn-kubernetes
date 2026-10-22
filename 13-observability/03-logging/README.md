@@ -39,7 +39,7 @@ helm repo update
 
 helm install elasticsearch \
   --set replicas=1 \
-  --set volumeClaimTemplate.storageClassName=gp2 \
+  --set volumeClaimTemplate.storageClassName=ebs-sc \
   -n logging elastic/elasticsearch
 ```
 

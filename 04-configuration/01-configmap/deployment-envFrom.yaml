@@ -1,19 +1,23 @@
-# To apply all the environment variables from a specific configmap
+# Injecting ALL keys of a ConfigMap with envFrom: add a key to the ConfigMap and
+# it shows up here without touching this manifest. Contrast with
+# deployment-env.yaml, which names each key explicitly.
+#
+# Own name and labels on purpose: see deployment-env.yaml.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sales-deployment
+  name: sales-deployment-envfrom
   labels:
-    app: sales
+    app: sales-envfrom
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sales
+      app: sales-envfrom
   template:
     metadata:
       labels:
-        app: sales
+        app: sales-envfrom
     spec:
       containers:
       - name: sales-app
@@ -22,4 +26,4 @@ spec:
         - containerPort: 80
         envFrom:
         - configMapRef:
-            name: sales-dev
+              name: sales-dev

@@ -2,7 +2,7 @@
 
 ## Objective
 Install `aws-ebs-csi-driver` so the cluster can provision EBS volumes via the
-CSI standard. Everything in `04-storageclass-dynamic/` depends on it.
+CSI standard. Everything in `03-storageclass-dynamic/` depends on it.
 
 ## Prerequisites
 - An EKS cluster (EKS 1.20+) — the driver needs IAM permissions to manage EBS.
@@ -39,7 +39,7 @@ helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver 
 ```bash
 kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
 ```
-Then apply [04-storageclass-dynamic/](../04-storageclass-dynamic/) and confirm
+Then apply [03-storageclass-dynamic/](../03-storageclass-dynamic/) and confirm
 the PVC becomes `Bound`.
 
 ## Cleanup

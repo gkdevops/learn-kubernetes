@@ -1,18 +1,25 @@
+# Injecting individual keys with configMapKeyRef: only the keys you name here
+# appear as environment variables. Contrast with deployment-envFrom.yaml, which
+# injects every key in the ConfigMap.
+#
+# Own name and labels on purpose: these two examples must be able to run side by
+# side. With a shared name/selector the second apply would patch away the
+# first one's `env` block and the two lessons would overwrite each other.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sales-deployment
+  name: sales-deployment-env
   labels:
-    app: sales
+    app: sales-env
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sales
+      app: sales-env
   template:
     metadata:
       labels:
-        app: sales
+        app: sales-env
     spec:
       containers:
       - name: sales-app

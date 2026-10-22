@@ -14,6 +14,19 @@ Create a production-like Kubernetes cluster on AWS with `eksctl`.
 3. Install [`eksctl`](https://eksctl.io/installation/).
 4. Make sure your SSH public key exists at `~/.ssh/aws.pub`
    (the public half of the key you use to log in to EC2 instances).
+   eksctl only needs the **public** key; derive it from an existing private
+   key instead of generating a new pair:
+
+   ```bash
+   ssh-keygen -y -f /path/to/private.pem > ~/.ssh/aws.pub
+   ```
+
+   On Windows, also strip the group/other ACLs from the `.pem` or `ssh`
+   refuses it with `UNPROTECTED PRIVATE KEY FILE`:
+
+   ```powershell
+   icacls myaws.pem /remove:g "BUILTIN\Users" "NT AUTHORITY\Authenticated Users"
+   ```
 
 ## Create the cluster
 `cluster.yaml` provisions a managed node group, the EBS/EFS CSI add-ons,
@@ -23,6 +36,86 @@ control-plane logging.
 ```bash
 eksctl create cluster -f cluster.yaml
 ```
+
+### The `vpc` block is pinned to this account's subnets
+
+`cluster.yaml` reuses an existing VPC instead of letting eksctl create one,
+because the default VPC has **no NAT gateway**:
+
+```
+vpc-0ef81059ce16ee1e2  172.31.0.0/16
+  us-east-1a  subnet-05683e137491c80c0  public
+  us-east-1b  subnet-0cad1fcc0ff77c377  public
+```
+
+> **Why this matters.** With no `vpc` block, eksctl creates a new VPC and puts
+> nodes in the **private** subnets, which have no route to the internet — every
+> image pull then fails with `ImagePullBackOff`. You would need a NAT gateway
+> (~$32/month) or ECR/S3 VPC endpoints to fix it. Public subnets get the same
+> internet access for free, which is why a learning cluster should use them.
+
+> **Pin it in the YAML, not on the command line.** eksctl refuses to combine a
+> config file with subnet flags:
+> `Error: cannot use --vpc-public-subnets when --config-file/-f is set`.
+> There is also no `--vpc-id` flag, and `--vpc-nat-mode` is rejected alongside
+> `-f` as well.
+
+If you run this in a different account, replace the two subnet IDs (and the
+`ssh.publicKeyPath`) with your own, or delete the whole `vpc:` block and accept
+the NAT gateway cost.
+
+Verify the nodes really do have internet access:
+
+```bash
+kubectl get nodes -o wide
+kubectl run netcheck --rm -it --restart=Never --image=busybox:1.36 -- \
+  wget -qO- -T5 https://registry.k8s.io/v2/ ; echo "exit=$?"
+```
+
+A non-zero `wget` exit (401/403 from the registry) still proves egress works;
+an `ImagePullBackOff` on the `netcheck` pod does not.
+
+### Check the node group has room for Pods
+
+The second thing that breaks a fresh cluster is Pod capacity. Check it explicitly:
+
+```bash
+kubectl get nodes -o custom-columns=NAME:.metadata.name,PODCAP:.status.allocatable.pods
+kubectl get pods -A --field-selector spec.nodeName=<node> --no-headers | wc -l
+```
+
+With the original `t3.small` / `t2.small` node group, EKS gives each node
+**8 Pod slots** — and the six add-ons consume exactly 8:
+
+```
+aws-node + coredns + kube-proxy + ebs-csi-controller + ebs-csi-node
++ efs-csi-controller + efs-csi-node + metrics-server  =  8/8
+```
+
+Both nodes then sit at 100% with **zero** application Pods, and your first
+`kubectl run` fails with a message that never mentions capacity:
+
+```
+0/2 nodes are available: 2 Too many pods.
+```
+
+`cluster.yaml` sets `maxPodsPerNode: 30` to avoid this. Two caveats worth knowing:
+
+- **You cannot raise it later.** AWS treats a managed node group's `maxPods` as
+  immutable, so changing it means creating a *new* node group and deleting the
+  old one.
+- 30 slots on a `t3.medium` still needs real `requests` in your manifests; 30
+  Pods each asking for 100Mi memory will exhaust 4 GB on their own. See
+  [09-resource-management](../09-resource-management/).
+
+### Spot vs on-demand
+
+The node group here is on-demand (`spot: false`). Spot is roughly 70% cheaper,
+but AWS can reclaim an instance with only a **2-minute** warning. During a lab
+that evicts the Pod you are testing at the worst moment, and the resulting
+`CrashLoopBackOff` / `NotReady` looks exactly like a broken manifest. On-demand
+also avoids "insufficient Spot capacity" when a single AZ is saturated. For a
+throwaway learning cluster the small extra cost is worth the predictability.
 
 Point `kubectl` at it (eksctl usually does this automatically):
 
@@ -49,8 +142,25 @@ helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets
 helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver \
   --namespace kube-system \
   --set syncSecret.enabled=true \
-  --set enableSecretRotation=true
+  --set enableSecretRotation=true \
+  --set tokenRequests[0].audience=sts.amazonaws.com \
+  --set tokenRequests[1].audience=pods.eks.amazonaws.com
 ```
+
+> **`tokenRequests` is not optional with an IRSA-based provider.** The AWS
+> provider needs a projected ServiceAccount token so it can call
+> `sts:AssumeRoleWithWebIdentity` *as the workload Pod's identity*. The chart
+> defaults `tokenRequests: []`, so without those two flags every mount fails
+> with:
+>
+> ```text
+> MountVolume.SetUp failed: CSI token error: serviceAccount.tokens not provided
+> - ensure tokenRequests is configured in CSIDriver spec
+> ```
+>
+> You can read the exact audiences the provider wants from its own log:
+> `This provider requires tokenRequests to be configured in the CSIDriver spec
+> (audiences: sts.amazonaws.com, pods.eks.amazonaws.com)`.
 
 `syncSecret.enabled=true` lets the driver create a mirrored K8s Secret so you
 can also use `secretKeyRef` in env vars (not just volume mounts).
